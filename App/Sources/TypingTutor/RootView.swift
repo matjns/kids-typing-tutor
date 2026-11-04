@@ -31,7 +31,7 @@ struct RootView: View {
             LessonPathView(path: $path)
         case .exercise(let id):
             if let lesson = LessonCatalog.lesson(id: id) {
-                ExerciseView(lesson: lesson, path: $path)
+                ExerciseView(path: $path, lesson: lesson)
             } else {
                 MissingScreen(path: $path)
             }
