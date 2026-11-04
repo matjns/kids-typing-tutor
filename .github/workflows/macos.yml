@@ -1,0 +1,79 @@
+name: macOS
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Tag to publish, such as v1.0.0
+        required: false
+        default: v1.0.0
+
+jobs:
+  test-and-build:
+    name: Test and build universal app
+    runs-on: macos-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode.app
+
+      - name: Show tools
+        run: |
+          xcodebuild -version
+          swift --version
+          uname -m
+
+      - name: Run tests
+        run: ./build.sh test
+
+      - name: Build universal app
+        run: ./build.sh
+
+      - name: Check the zip
+        run: |
+          test -f dist/TypingTutor-mac-universal.zip
+          test -f dist/README-mac.txt
+          unzip -l dist/TypingTutor-mac-universal.zip
+          unzip -t dist/TypingTutor-mac-universal.zip
+
+      - name: Upload app zip
+        uses: actions/upload-artifact@v4
+        with:
+          name: TypingTutor-mac-universal
+          path: |
+            dist/TypingTutor-mac-universal.zip
+            dist/README-mac.txt
+          if-no-files-found: error
+
+  release:
+    name: Publish GitHub Release
+    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+    needs: test-and-build
+    runs-on: macos-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Download the built app
+        uses: actions/download-artifact@v4
+        with:
+          name: TypingTutor-mac-universal
+          path: dist
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.release_tag || github.ref_name }}
+          files: |
+            dist/TypingTutor-mac-universal.zip
+            dist/README-mac.txt
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
