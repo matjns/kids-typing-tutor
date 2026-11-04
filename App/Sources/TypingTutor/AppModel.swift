@@ -4,7 +4,7 @@ import TypingTutorCore
 
 @MainActor
 final class AppModel: ObservableObject {
-    @Published var progress: Progress
+    @Published var progress: TypingProgress
     @Published var saveWarning: String?
     @Published private(set) var coach: AdaptiveCoach
 

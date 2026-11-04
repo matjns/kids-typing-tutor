@@ -3,7 +3,7 @@ import XCTest
 
 final class ProgressTests: XCTestCase {
     func testBlankProgressHasNoName() {
-        XCTAssertEqual(Progress.blank.playerName, "")
+        XCTAssertEqual(TypingProgress.blank.playerName, "")
         XCTAssertEqual(Greeting.homeTitle(name: ""), "Hi there")
         XCTAssertEqual(Greeting.homeTitle(name: "   "), "Hi there")
         XCTAssertEqual(Greeting.homeTitle(name: "ABC"), "Hi, ABC")
@@ -12,7 +12,7 @@ final class ProgressTests: XCTestCase {
     }
 
     func testUnlocksAndBestStars() {
-        var progress = Progress.blank
+        var progress = TypingProgress.blank
         let first = LessonCatalog.all[0]
         let second = LessonCatalog.all[1]
         XCTAssertTrue(ProgressRules.isUnlocked(lesson: first, progress: progress))
@@ -37,7 +37,7 @@ final class ProgressTests: XCTestCase {
     }
 
     func testStageBadgeAndTenMinuteBadge() {
-        var progress = Progress.blank
+        var progress = TypingProgress.blank
         for lesson in LessonCatalog.lessons(in: .homeRow) {
             let stats = SessionStats(correctCharacters: 10, mistakes: 1, elapsed: 20, completed: true)
             ProgressRules.recordLesson(&progress, lessonID: lesson.id, stats: stats, at: Date(timeIntervalSince1970: 30), keyStats: [:], weakKeyPractice: false)
@@ -52,7 +52,7 @@ final class ProgressTests: XCTestCase {
     }
 
     func testHistoryIsCapped() {
-        var progress = Progress.blank
+        var progress = TypingProgress.blank
         let stats = SessionStats(correctCharacters: 5, mistakes: 0, elapsed: 5, completed: true)
         for index in 0..<45 {
             ProgressRules.recordLesson(&progress, lessonID: "home-fj", stats: stats, at: Date(timeIntervalSince1970: Double(index)), keyStats: [:], weakKeyPractice: false)
@@ -64,7 +64,7 @@ final class ProgressTests: XCTestCase {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent("typing-tutor-tests-\(UUID().uuidString)", isDirectory: true)
         let store = ProgressStore(directory: directory)
         XCTAssertEqual(store.load().playerName, "")
-        var progress = Progress.blank
+        var progress = TypingProgress.blank
         progress.playerName = "ABC"
         progress.bestStars["home-fj"] = 2
         progress.keyStats["f"] = KeyStat(seen: 4, missed: 1)
@@ -82,7 +82,7 @@ final class ProgressTests: XCTestCase {
         try "not json".data(using: .utf8)?.write(to: store.fileURL)
         XCTAssertEqual(store.load().playerName, "")
 
-        let messy = Progress(playerName: "  ABC \n")
+        let messy = TypingProgress(playerName: "  ABC \n")
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         let data = try encoder.encode(messy)
@@ -95,7 +95,7 @@ final class ProgressTests: XCTestCase {
     }
 
     func testUnlockedKeysGrowWithStars() {
-        var progress = Progress.blank
+        var progress = TypingProgress.blank
         XCTAssertEqual(ProgressRules.unlockedKeys(progress: progress), Set(LessonCatalog.all[0].allowedKeys))
         progress.bestStars[LessonCatalog.all[0].id] = 1
         progress.bestStars[LessonCatalog.all[1].id] = 1

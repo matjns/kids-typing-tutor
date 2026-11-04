@@ -16,7 +16,7 @@ public struct AttemptRecord: Codable, Equatable, Sendable {
     }
 }
 
-public struct Progress: Codable, Equatable, Sendable {
+public struct TypingProgress: Codable, Equatable, Sendable {
     public var playerName: String
     public var bestStars: [String: Int]
     public var keyStats: [String: KeyStat]
@@ -52,7 +52,7 @@ public struct Progress: Codable, Equatable, Sendable {
         self.history = history
     }
 
-    public static let blank = Progress()
+    public static let blank = TypingProgress()
 
     public var lessonsWithStars: Int {
         bestStars.values.filter { $0 > 0 }.count
@@ -92,7 +92,7 @@ public struct Badge: Equatable, Identifiable, Sendable {
         Badge(id: "ten-minute-hero", title: "Ten minute hero", detail: "Practice for ten minutes in all.")
     ]
 
-    public static func isEarned(_ id: String, progress: Progress) -> Bool {
+    public static func isEarned(_ id: String, progress: TypingProgress) -> Bool {
         switch id {
         case "first-steps":
             return progress.lessonsWithStars >= 1
@@ -129,11 +129,11 @@ public struct Badge: Equatable, Identifiable, Sendable {
         }
     }
 
-    public static func earned(from progress: Progress) -> [Badge] {
+    public static func earned(from progress: TypingProgress) -> [Badge] {
         all.filter { isEarned($0.id, progress: progress) }
     }
 
-    private static func stageComplete(_ stage: Stage, _ progress: Progress) -> Bool {
+    private static func stageComplete(_ stage: Stage, _ progress: TypingProgress) -> Bool {
         let lessons = LessonCatalog.lessons(in: stage)
         guard !lessons.isEmpty else { return false }
         return lessons.allSatisfy { (progress.bestStars[$0.id] ?? 0) >= 1 }
@@ -141,7 +141,7 @@ public struct Badge: Equatable, Identifiable, Sendable {
 }
 
 public enum ProgressRules {
-    public static func isUnlocked(lesson: Lesson, progress: Progress) -> Bool {
+    public static func isUnlocked(lesson: Lesson, progress: TypingProgress) -> Bool {
         guard let index = LessonCatalog.all.firstIndex(where: { $0.id == lesson.id }) else {
             return false
         }
@@ -150,7 +150,7 @@ public enum ProgressRules {
         return (progress.bestStars[previous.id] ?? 0) >= 1
     }
 
-    public static func nextLesson(in progress: Progress) -> Lesson {
+    public static func nextLesson(in progress: TypingProgress) -> Lesson {
         if let unfinished = LessonCatalog.all.first(where: { lesson in
             isUnlocked(lesson: lesson, progress: progress) && (progress.bestStars[lesson.id] ?? 0) == 0
         }) {
@@ -167,7 +167,7 @@ public enum ProgressRules {
         return ranked.first ?? LessonCatalog.all[0]
     }
 
-    public static func unlockedKeys(progress: Progress) -> Set<Character> {
+    public static func unlockedKeys(progress: TypingProgress) -> Set<Character> {
         var keys = Set<Character>()
         for lesson in LessonCatalog.all where (progress.bestStars[lesson.id] ?? 0) > 0 {
             keys.formUnion(lesson.allowedKeys)
@@ -179,7 +179,7 @@ public enum ProgressRules {
     }
 
     public static func recordLesson(
-        _ progress: inout Progress,
+        _ progress: inout TypingProgress,
         lessonID: String,
         stats: SessionStats,
         at date: Date,
@@ -210,7 +210,7 @@ public enum ProgressRules {
         }
     }
 
-    public static func addPracticeTime(_ progress: inout Progress, seconds: TimeInterval, keyStats: [String: KeyStat]) {
+    public static func addPracticeTime(_ progress: inout TypingProgress, seconds: TimeInterval, keyStats: [String: KeyStat]) {
         progress.totalPracticeSeconds += max(0, Int(seconds.rounded()))
         progress.keyStats = keyStats
     }
@@ -234,13 +234,13 @@ public struct ProgressStore: Sendable {
         return base.appendingPathComponent(ProgressStore.folderName, isDirectory: true)
     }
 
-    public func load() -> Progress {
+    public func load() -> TypingProgress {
         guard let data = try? Data(contentsOf: fileURL) else {
             return .blank
         }
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
-        guard let progress = try? decoder.decode(Progress.self, from: data) else {
+        guard let progress = try? decoder.decode(TypingProgress.self, from: data) else {
             return .blank
         }
         var cleaned = progress
@@ -248,7 +248,7 @@ public struct ProgressStore: Sendable {
         return cleaned
     }
 
-    public func save(_ progress: Progress) throws {
+    public func save(_ progress: TypingProgress) throws {
         let directory = fileURL.deletingLastPathComponent()
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         let encoder = JSONEncoder()
