@@ -35,6 +35,14 @@ final class AppModel: ObservableObject {
         return ExerciseGenerator.make(lesson: lesson, weakKeys: weak, seed: freshSeed(lesson.id))
     }
 
+    func noteOpened(lessonID: String) {
+        let before = progress.furthestLessonID
+        ProgressRules.noteOpened(&progress, lessonID: lessonID)
+        if progress.furthestLessonID != before {
+            persist()
+        }
+    }
+
     func recordLesson(lessonID: String, stats: SessionStats, coach: AdaptiveCoach, weakKeyPractice: Bool) {
         self.coach = coach
         ProgressRules.recordLesson(

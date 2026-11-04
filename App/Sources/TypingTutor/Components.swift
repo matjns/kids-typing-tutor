@@ -77,6 +77,33 @@ struct StarRow: View {
     }
 }
 
+/// A big, friendly button for moving between lessons.
+struct LessonNavButton: View {
+    let title: String
+    let symbol: String
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 8) {
+                Image(systemName: symbol)
+                Text(title)
+                    .lineLimit(1)
+            }
+            .font(.system(size: 18, weight: .bold, design: .rounded))
+            .foregroundStyle(Theme.ink)
+            .padding(.horizontal, 18)
+            .padding(.vertical, 12)
+            .frame(minHeight: 48)
+            .background(Color.white, in: Capsule())
+            .overlay(Capsule().stroke(Theme.ink.opacity(0.12), lineWidth: 1))
+            .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(title)
+    }
+}
+
 struct BackButton: View {
     let action: () -> Void
 

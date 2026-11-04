@@ -7,6 +7,9 @@ struct PracticeScreen<ResultActions: View>: View {
     let title: String
     let blurb: String
     let onBack: () -> Void
+    let previousTitle: String?
+    let onPrevious: (() -> Void)?
+    let onLessons: (() -> Void)?
     let result: () -> ResultActions
 
     init(
@@ -14,18 +17,27 @@ struct PracticeScreen<ResultActions: View>: View {
         title: String,
         blurb: String,
         onBack: @escaping () -> Void,
+        previousTitle: String? = nil,
+        onPrevious: (() -> Void)? = nil,
+        onLessons: (() -> Void)? = nil,
         @ViewBuilder result: @escaping () -> ResultActions
     ) {
         _session = ObservedObject(wrappedValue: session)
         self.title = title
         self.blurb = blurb
         self.onBack = onBack
+        self.previousTitle = previousTitle
+        self.onPrevious = onPrevious
+        self.onLessons = onLessons
         self.result = result
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             header
+            if onPrevious != nil || onLessons != nil {
+                lessonNavigation
+            }
             if session.ready {
                 if session.engine.isComplete {
                     resultCard
@@ -92,6 +104,22 @@ struct PracticeScreen<ResultActions: View>: View {
                 title: "Accuracy",
                 value: DisplayFormat.percent(session.stats.accuracy, attempts: session.stats.correctCharacters + session.stats.mistakes)
             )
+        }
+    }
+
+    private var lessonNavigation: some View {
+        HStack(spacing: 12) {
+            if let onPrevious {
+                LessonNavButton(
+                    title: previousTitle.map { "Previous: \($0)" } ?? "Previous lesson",
+                    symbol: "backward.fill",
+                    action: onPrevious
+                )
+            }
+            if let onLessons {
+                LessonNavButton(title: "All lessons", symbol: "list.bullet", action: onLessons)
+            }
+            Spacer(minLength: 0)
         }
     }
 

@@ -18,6 +18,13 @@ public enum LessonCatalog {
         return all[index + 1]
     }
 
+    public static func previous(before id: String) -> Lesson? {
+        guard let index = all.firstIndex(where: { $0.id == id }), index > 0 else {
+            return nil
+        }
+        return all[index - 1]
+    }
+
     private static func makeAll() -> [Lesson] {
         let homeFJ = "fj"
         let homeDK = "fjdk"

@@ -14,6 +14,9 @@ struct LessonPathView: View {
                     .foregroundStyle(Theme.ink)
                 Spacer()
             }
+            Text("Tap any open lesson to play it again. Your stars stay safe.")
+                .font(.system(size: 17, weight: .semibold, design: .rounded))
+                .foregroundStyle(Theme.ink.opacity(0.7))
             ScrollView {
                 VStack(alignment: .leading, spacing: 22) {
                     ForEach(Stage.allCases, id: \.self) { stage in
@@ -59,7 +62,7 @@ struct LessonPathView: View {
                     Text(lesson.title)
                         .font(.system(size: 18, weight: .bold, design: .rounded))
                         .foregroundStyle(Theme.ink)
-                    Text(unlocked ? lesson.blurb : "Finish the previous lesson to open this one.")
+                    Text(unlocked ? lesson.blurb : "Finish an earlier lesson to open this one.")
                         .font(.system(size: 14, weight: .medium, design: .rounded))
                         .foregroundStyle(Theme.ink.opacity(0.62))
                         .lineLimit(2)

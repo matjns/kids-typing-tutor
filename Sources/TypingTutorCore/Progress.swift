@@ -27,6 +27,9 @@ public struct TypingProgress: Codable, Equatable, Sendable {
     public var racesWon: Int
     public var weakKeySessions: Int
     public var history: [AttemptRecord]
+    /// The furthest lesson the player has opened, even one reached by skipping
+    /// ahead. Optional so older progress files without it still load.
+    public var furthestLessonID: String?
 
     public init(
         playerName: String = "",
@@ -38,7 +41,8 @@ public struct TypingProgress: Codable, Equatable, Sendable {
         racesFinished: Int = 0,
         racesWon: Int = 0,
         weakKeySessions: Int = 0,
-        history: [AttemptRecord] = []
+        history: [AttemptRecord] = [],
+        furthestLessonID: String? = nil
     ) {
         self.playerName = playerName
         self.bestStars = bestStars
@@ -50,6 +54,7 @@ public struct TypingProgress: Codable, Equatable, Sendable {
         self.racesWon = racesWon
         self.weakKeySessions = weakKeySessions
         self.history = history
+        self.furthestLessonID = furthestLessonID
     }
 
     public static let blank = TypingProgress()
@@ -141,13 +146,45 @@ public struct Badge: Equatable, Identifiable, Sendable {
 }
 
 public enum ProgressRules {
+    /// Index of the furthest lesson that is open. Every lesson at or before it
+    /// stays open for replay, so a skipped lesson is never lost and replaying an
+    /// early lesson never closes later ones.
+    public static func furthestUnlockedIndex(progress: TypingProgress) -> Int {
+        let lessons = LessonCatalog.all
+        guard !lessons.isEmpty else { return 0 }
+        var furthest = 0
+        for (index, lesson) in lessons.enumerated() where (progress.bestStars[lesson.id] ?? 0) > 0 {
+            furthest = max(furthest, min(index + 1, lessons.count - 1))
+        }
+        if let id = progress.furthestLessonID,
+           let index = lessons.firstIndex(where: { $0.id == id }) {
+            furthest = max(furthest, index)
+        }
+        return furthest
+    }
+
     public static func isUnlocked(lesson: Lesson, progress: TypingProgress) -> Bool {
         guard let index = LessonCatalog.all.firstIndex(where: { $0.id == lesson.id }) else {
             return false
         }
-        if index == 0 { return true }
-        let previous = LessonCatalog.all[index - 1]
-        return (progress.bestStars[previous.id] ?? 0) >= 1
+        return index <= furthestUnlockedIndex(progress: progress)
+    }
+
+    /// Every open lesson, in path order.
+    public static func unlockedLessons(progress: TypingProgress) -> [Lesson] {
+        let furthest = furthestUnlockedIndex(progress: progress)
+        return Array(LessonCatalog.all.prefix(furthest + 1))
+    }
+
+    /// Remember that a lesson was opened. Only ever moves the furthest point forward.
+    public static func noteOpened(_ progress: inout TypingProgress, lessonID: String) {
+        guard let index = LessonCatalog.all.firstIndex(where: { $0.id == lessonID }) else { return }
+        let current = progress.furthestLessonID.flatMap { id in
+            LessonCatalog.all.firstIndex(where: { $0.id == id })
+        } ?? -1
+        if index > current {
+            progress.furthestLessonID = lessonID
+        }
     }
 
     public static func nextLesson(in progress: TypingProgress) -> Lesson {
